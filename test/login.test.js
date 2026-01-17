@@ -1,13 +1,27 @@
 // test/login.test.js
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-const {Builder, By, until} = require('selenium-webdriver');
+
+const { Builder, By, until } = require("selenium-webdriver");
+const chrome = require("selenium-webdriver/chrome");
 
 let driver;
 
 async function startBrowser() {
-    driver = await new Builder().forBrowser("chrome").build();
+    const options = new chrome.Options();
+
+    // 👇 Krävs för CI (och funkar lokalt)
+    options.addArguments("--headless=new");
+    options.addArguments("--no-sandbox");
+    options.addArguments("--disable-dev-shm-usage");
+
+    driver = await new Builder()
+        .forBrowser("chrome")
+        .setChromeOptions(options)
+        .build();
+
     await driver.get("https://www.saucedemo.com/");
 }
 
@@ -17,8 +31,7 @@ async function stopBrowser() {
     }
 }
 
-// Test 1: Rätt användernamn och lösenord
-
+// ===== TEST 1: RÄTT ANVÄNDARNAMN =====
 async function loginSuccessTest() {
     await startBrowser();
 
@@ -26,19 +39,20 @@ async function loginSuccessTest() {
     await driver.findElement(By.id("password")).sendKeys("secret_sauce");
     await driver.findElement(By.id("login-button")).click();
 
-    await driver.wait(until.urlIs("https://www.saucedemo.com/inventory.html"), 5000);
+    await driver.wait(
+        until.urlIs("https://www.saucedemo.com/inventory.html"),
+        5000
+    );
 
     console.log("Login Success Test Passed");
 
-    await sleep(12000); 
+    // ⛔ sleep används bara lokalt – CI bryr sig inte
+    await sleep(3000);
 
     await stopBrowser();
 }
 
-
-
-// test 2: felakt användernamn
-
+// ===== TEST 2: FEL ANVÄNDARNAMN =====
 async function loginWrongUsernameTest() {
     await startBrowser();
 
@@ -56,14 +70,11 @@ async function loginWrongUsernameTest() {
 
     console.log("Login Wrong Username Test Passed");
 
-    // 👉 Visa felmeddelandet i 5 sek
-    await sleep(5000);
-
+    await sleep(2000);
     await stopBrowser();
 }
 
-// Test 3: fel lösenord
-
+// ===== TEST 3: FEL LÖSENORD =====
 async function loginFailTest() {
     await startBrowser();
 
@@ -81,27 +92,24 @@ async function loginFailTest() {
 
     console.log("Login Fail Test Passed");
 
-    // 👉 Visa felmeddelandet i 5 sek
-    await sleep(5000);
-
+    await sleep(2000);
     await stopBrowser();
 }
-
-
 
 // ===== KÖR ALLA TESTER =====
 (async function runAllTests() {
     try {
         await loginSuccessTest();
-        console.log("✅ Test 1 (lyckad inloggning) OK");
+        console.log("✅ Test 1 OK");
 
         await loginWrongUsernameTest();
-        console.log("✅ Test 2 (fel användarnamn) OK");
+        console.log("✅ Test 2 OK");
 
         await loginFailTest();
-        console.log("✅ Test 3 (fel lösenord) OK");
+        console.log("✅ Test 3 OK");
     } catch (error) {
         console.error("❌ Ett test misslyckades:", error.message);
         process.exit(1);
     }
 })();
+
